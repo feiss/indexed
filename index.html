@@ -1,0 +1,238 @@
+<!-- copyright 2015 Diego F. Goberna http://feiss.be -->
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<title>8-bit indexed color in webgl</title>
+<style>
+html, body {
+	margin: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: #000;
+	overflow: hidden;
+	font-family: monospace;
+	color: #777;
+}
+a{
+	color: #444;
+}
+canvas {
+	width: 512px;
+	height: 512px;
+}
+</style>
+</head>
+<body>
+	<canvas id="c"></canvas>
+	<div>move mouse around canvas, click to toggle palette cycling.<br>
+	<a href="http://feiss.be">http://feiss.be</a></div>
+
+<script id="vs" type="notjs">
+attribute vec4 position;
+void main() {
+	gl_Position = position;
+}
+</script>
+
+<script id="fs" type="notjs">
+precision mediump float;
+uniform vec2 resolution;
+uniform sampler2D fb;
+uniform sampler2D pal;
+
+void main() {
+	vec2 uv = gl_FragCoord.xy / vec2(512.0, 512.0);
+	uv.y= 1.0-uv.y;
+	vec4 colindex= texture2D(fb, uv);
+	vec4 color= texture2D(pal, colindex.xy);
+	gl_FragColor = color;
+}
+</script>
+
+<script src="twgl-full.js"></script>
+<script>
+
+var W= 256;
+var H= 256;
+
+var gl = twgl.getWebGLContext(document.getElementById("c"));
+var programInfo = twgl.createProgramInfo(gl, ["vs", "fs"]);
+
+//2 triangles
+var arrays = {position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0]};
+var bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
+
+//init palette
+var palette= new Uint8Array(256*4);
+for (var i = 0; i < 256; i++) {
+	palette[i*4+0]= i;  
+	palette[i*4+1]= Math.floor(Math.sin(i/256.0*Math.PI)*255);  
+	palette[i*4+2]= 0;
+	palette[i*4+3]= 255;
+};
+
+for (var i=10000, lookupTable=[]; i--;) {
+	lookupTable.push(Math.random()*3|0);
+}
+var zzz=0;
+function lookup() {
+	return ++zzz >= lookupTable.length ? lookupTable[zzz=0] : lookupTable[zzz];
+}
+
+var fb= new Uint8Array(W*H);
+
+function updateFB(){
+	for (var i = 0; i < W*H; i++) {
+		fb[i]= Math.floor(i/W/H*17)+lookup();
+	}
+	for (var i = 0; i < 256; i++) {
+		fb[i]= i;
+		fb[W+i]= i;
+	}
+}
+updateFB();
+
+var textures= twgl.createTextures(gl, {
+	pal: {
+		min: gl.NEAREST,
+		mag: gl.NEAREST,
+		width: 256,
+		height: 1,
+		format: gl.RGBA,
+		src: palette,
+		type: gl.UNSIGNED_BYTE,
+		auto: false
+	},
+	fb: {
+		min: gl.NEAREST,
+		mag: gl.NEAREST,
+		format: gl.LUMINANCE,
+		width: W,
+		height: H,
+		src: fb,
+		type: gl.UNSIGNED_BYTE,
+		auto: false
+	}
+});
+
+
+function cyclePalette(start, end){
+	palette[end*4+0]= palette[start*4+0];  
+	palette[end*4+1]= palette[start*4+1];
+	palette[end*4+2]= palette[start*4+2];
+	palette[end*4+3]= palette[start*4+3];
+
+	for (var i = start, ii=start+1; i < end; i++, ii++) {
+		palette[i*4+0]= palette[ii*4+0];
+		palette[i*4+1]= palette[ii*4+1];
+		palette[i*4+2]= palette[ii*4+2];
+		palette[i*4+3]= palette[ii*4+3];
+	}
+}
+
+var sprites=[{
+	x: 1,
+	y: 1,
+	width: 10,
+	height: 7,
+	pixels: new Uint8Array([
+		0,0,4,4,4,4,4,4,0,0,
+		0,4,4,6,6,6,6,4,4,0,
+		4,4,6,6,8,8,6,6,4,4,
+		4,6,6,8,8,8,8,6,6,4,
+		4,4,6,6,8,8,6,6,4,4,
+		0,4,4,6,6,6,6,4,4,0,
+		0,0,4,4,4,4,4,4,0,0
+		])
+}];
+
+function drawSprite(spr){
+	var j= spr.y*W+spr.x;
+	for (var i = 0, len= spr.pixels.length; i < len;) {
+		fb[j]= Math.min(254, (fb[j]+spr.pixels[i]));
+		i++;
+		if(i%spr.width==0) j+= W-spr.width+1; else j++;
+	};
+}
+
+function draw(){
+	for (var i = 0; i < sprites.length; i++) {
+		drawSprite(sprites[i])
+	};
+}
+
+document.getElementById('c').addEventListener('mousemove', function(ev){
+	sprites[0].x= Math.floor(ev.x/2)-4;
+	sprites[0].y= Math.floor(ev.y/2)-4;
+});
+document.getElementById('c').addEventListener('mousedown', function(ev){
+	cycling= !cycling;
+});
+
+var cycling= false;
+var starttime= new Date().getTime();
+var frames= 0;
+var time= 0;
+function render(dt) {
+	time= dt;
+	twgl.resizeCanvasToDisplaySize(gl.canvas);
+	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+	draw();
+
+	if (cycling) cyclePalette(0,254);
+	gl.bindTexture(gl.TEXTURE_2D, textures.pal);
+	twgl.setTextureFromArray(gl, textures.pal, palette, {width: 256, height: 1, format: gl.RGBA, type: gl.UNSIGNED_BYTE, update:true});
+
+	gl.bindTexture(gl.TEXTURE_2D, textures.fb);
+	twgl.setTextureFromArray(gl, textures.fb, fb, {format: gl.LUMINANCE, width: W, height: H, type: gl.UNSIGNED_BYTE, update: true});
+
+	var uniforms = {
+		time: time * 0.001,
+		resolution: [gl.canvas.width, gl.canvas.height],
+		fb: textures.fb,
+		pal: textures.pal
+	};
+
+	gl.useProgram(programInfo.program);
+	twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+	twgl.setUniforms(programInfo, uniforms);
+	twgl.drawBufferInfo(gl, gl.TRIANGLES, bufferInfo);
+
+	frames++;
+	if (frames==60*5){
+		console.log('fps: '+ Math.floor( (frames*1000)/(new Date().getTime()-starttime)*10)/10);
+		starttime= new Date().getTime();
+		frames= 0;
+	}
+	requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+
+
+
+<!-- google analytics -->
+ 
+<script>
+  var _gaq = [['_setAccount', 'UA-5753152-1'], ['_trackPageview']];
+  (function(d, t) {
+    var g = d.createElement(t),
+        s = d.getElementsByTagName(t)[0];
+    g.src = '//www.google-analytics.com/ga.js';
+    s.parentNode.insertBefore(g, s);
+  }(document, 'script'));
+</script>
+
+<!-- google analytics -->
+
+
+</body>
+
+</html>
+
+
