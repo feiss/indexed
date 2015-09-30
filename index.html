@@ -169,8 +169,8 @@ function draw(){
 }
 
 document.getElementById('c').addEventListener('mousemove', function(ev){
-	sprites[0].x= Math.floor(ev.x/2)-4;
-	sprites[0].y= Math.floor(ev.y/2)-4;
+	sprites[0].x= Math.floor(ev.clientX/2)-4;
+	sprites[0].y= Math.floor(ev.clientY/2)-4;
 });
 document.getElementById('c').addEventListener('mousedown', function(ev){
 	cycling= !cycling;
