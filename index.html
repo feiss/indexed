@@ -110,7 +110,8 @@ var frames= 0;
 var time= 0;
 function render(dt) {
 	time= dt;
-
+	
+	stage.fb.draw(glue,0,0);
 	stage.fb.draw(testsprite, sx, sy);
 
 	if (cycling){
@@ -132,13 +133,14 @@ var stage;
 
 loadAssets([
 	'res/testsprite.pcx', 'res/lena.pcx',
-	'res/o1.pcx', 'res/grad.pcx'
+	'res/o1.pcx', 'res/grad.pcx', 'res/glue.pcx'
 	],
 	function(){
 		stage= new Stage('c', W, H, 2, false);
 		testsprite= new Buffer(assets['lena.pcx']);
 		stage.setPalette(testsprite.palette);
 		stage.clear(153);
+		glue= new Buffer(assets['glue.pcx']);
 		requestAnimationFrame(render);		
 	},
 	function(progress){

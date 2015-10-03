@@ -8,14 +8,19 @@ void main() {\
 
 var indexed_frag="\
 precision mediump float;\
+uniform vec2 canvasratio;\
 uniform vec2 resolution;\
 uniform sampler2D fb;\
 uniform sampler2D pal;\
 void main() {\
-	vec2 uv = gl_FragCoord.xy / resolution;\
-	uv.y= 1.0-uv.y;\
+	vec2 uv = gl_FragCoord.xy / resolution * canvasratio;\
+	uv.y= canvasratio.y - uv.y;\
 	vec4 colindex= texture2D(fb, uv);\
 	vec4 color= texture2D(pal, colindex.xy);\
+\
+	uv/= canvasratio;\
+	vec2 uv2 = uv * 2.0 - 1.0;\
+    color*= smoothstep(1.65, 1.65 - 0.75, length(uv2));\
 	gl_FragColor = color;\
 }";
 
@@ -121,7 +126,6 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 	}
 	this.width= width || this.canvas.width/scale|0;
 	this.height= height || this.canvas.height/scale|0;
-	console.log(this.width);
 	this.canvas.width= this.width*scale;
 	this.canvas.height= this.height*scale;
 	this.center= {x: this.width/2|0, y: this.height/2|0}
@@ -158,14 +162,18 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 		this.bufferInfo = twgl.createBufferInfoFromArrays(this.gl, 
 			{position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0]});
 
+		//find power-2 texture sizes for this canvas size
+		var twidth= Math.pow(2, Math.ceil(Math.log(this.width)/Math.log(2)));
+		var theight= Math.pow(2, Math.ceil(Math.log(this.height)/Math.log(2)));
+		var palwidth= Math.pow(2, Math.ceil(Math.log(this.palette.length)/Math.log(2)));
 		this.textures= twgl.createTextures(this.gl, {
 			pal: {
 				min: this.gl.NEAREST,
 				mag: this.gl.NEAREST,
-				width: this.palette.length,
+				width: palwidth,
 				height: 1,
 				format: this.gl.RGB,
-				src: this.palette.data,
+				//src: this.palette.data,
 				type: this.gl.UNSIGNED_BYTE,
 				auto: false
 			},
@@ -173,15 +181,16 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 				min: this.gl.NEAREST,
 				mag: this.gl.NEAREST,
 				format: this.gl.LUMINANCE,
-				width: this.width,
-				height: this.height,
-				src: this.fb.data,
+				width: twidth,
+				height: theight,
+				//src: this.fb.data,
 				type: this.gl.UNSIGNED_BYTE,
 				auto: false
 			}
-		});
+		});		
 		this.uniforms = {
 			resolution: [this.gl.canvas.width, this.gl.canvas.height],
+			canvasratio: [this.width/twidth, this.height/theight],
 			fb: this.textures.fb,
 			pal: this.textures.pal
 		};
@@ -204,13 +213,16 @@ Stage.prototype= {
 		if (!this.gl) return;
 
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures.pal);
-		twgl.setTextureFromArray(this.gl, this.textures.pal, this.palette.data, 
-			{width: this.palette.length, height: 1, format: this.gl.RGB, type: this.gl.UNSIGNED_BYTE, update:true});
+//		twgl.setTextureFromArray(this.gl, this.textures.pal, this.palette.data, {width: this.palette.length, height: 1, format: this.gl.RGB, type: this.gl.UNSIGNED_BYTE, update:true});
+		this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
+		this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.palette.length, 1, this.gl.RGB, this.gl.UNSIGNED_BYTE, this.palette.data);
 	},
 	flip: function(){
 		if (this.gl){
 			this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures.fb);
-			twgl.setTextureFromArray(this.gl, this.textures.fb, this.fb.data, {format: this.gl.LUMINANCE, width: this.width, height: this.height, type: this.gl.UNSIGNED_BYTE, update: true});
+			//twgl.setTextureFromArray(this.gl, this.textures.fb, this.fb.data, {format: this.gl.LUMINANCE, width: this.width, height: this.height, type: this.gl.UNSIGNED_BYTE, update: true});
+			this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
+			this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.width, this.height, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, this.fb.data);
 
 			this.gl.useProgram(this.programInfo.program);
 			twgl.setBuffersAndAttributes(this.gl, this.programInfo, this.bufferInfo);
@@ -371,7 +383,6 @@ Buffer.prototype= {
 		this.height= pcx.height;
 		this.data= pcx.data;
 		this.palette= pcx.palette;
-		console.log(pcx);
 	},
 	set: function(color){
 		for (var i= 0, len= this.data.length; i<len; i++) this.data[i]= color;
