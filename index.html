@@ -19,10 +19,7 @@ html, body {
 a{
 	color: #444;
 }
-#c {
-	width: 512px;
-	height: 512px;
-}
+
 ul{
 	margin: 0;
 	padding: 0;
@@ -46,34 +43,13 @@ div{
 	<br>
 	<a href="https://github.com/feiss/indexed">View on GitHub</a></div>
 
-<script id="vs" type="notjs">
-attribute vec4 position;
-void main() {
-	gl_Position = position;
-}
-</script>
 
-<script id="fs" type="notjs">
-precision mediump float;
-uniform vec2 resolution;
-uniform sampler2D fb;
-uniform sampler2D pal;
-
-void main() {
-	vec2 uv = gl_FragCoord.xy / vec2(512.0, 512.0);
-	uv.y= 1.0-uv.y;
-	vec4 colindex= texture2D(fb, uv);
-	vec4 color= texture2D(pal, colindex.xy);
-	gl_FragColor = color;
-}
-</script>
-
-<script src="res/twgl-full.js"></script>
+<script src="twgl-full.js"></script>
 <script src="indexed.js"></script>
 <script>
 
-var W= 256;
-var H= 256;
+var W= 320;
+var H= 200;
 
 
 for (var i=10000, lookupTable=[]; i--;) {
@@ -97,82 +73,12 @@ function updateFB(){
 }
 updateFB();
 
-var gl, programInfo, arrays, bufferInfo, textures;
-
-function initWebgl(){
-	gl = twgl.getWebGLContext(document.getElementById("c"));
-	programInfo = twgl.createProgramInfo(gl, ["vs", "fs"]);
-
-	//2 triangles
-	arrays = {position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0]};
-	bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
-
-
-	textures= twgl.createTextures(gl, {
-		pal: {
-			min: gl.NEAREST,
-			mag: gl.NEAREST,
-			width: 256,
-			height: 1,
-			format: gl.RGB,
-			src: palette.data,
-			type: gl.UNSIGNED_BYTE,
-			auto: false
-		},
-		fb: {
-			min: gl.NEAREST,
-			mag: gl.NEAREST,
-			format: gl.LUMINANCE,
-			width: W,
-			height: H,
-			src: fb.data,
-			type: gl.UNSIGNED_BYTE,
-			auto: false
-		}
-	});
-}
-
-
-/*
-var sprites=[{
-	x: 1,
-	y: 1,
-	width: 10,
-	height: 7,
-	pixels: new Uint8Array([
-		0,0,4,4,4,4,4,4,0,0,
-		0,4,4,6,6,6,6,4,4,0,
-		4,4,6,6,8,8,6,6,4,4,
-		4,6,6,8,8,8,8,6,6,4,
-		4,4,6,6,8,8,6,6,4,4,
-		0,4,4,6,6,6,6,4,4,0,
-		0,0,4,4,4,4,4,4,0,0
-		])
-}];
-
-function drawSprite(spr){
-	var j= spr.y*W+spr.x;
-	for (var i = 0, len= spr.pixels.length; i < len;) {
-		fb[j]= Math.min(254, (fb[j]+spr.pixels[i]));
-		i++;
-		if(i%spr.width==0) j+= W-spr.width+1; else j++;
-	};
-}
-
-function draw(){
-	for (var i = 0; i < sprites.length; i++) {
-		drawSprite(sprites[i])
-	};
-}*/
-
 var sx=0, sy=0;
 
-function draw(){
-	testsprite.draw(fb, sx, sy);
-}
+
 document.getElementById('c').addEventListener('mousemove', function(ev){
-	sx= Math.floor(ev.clientX/2-testsprite.width/2);
-	sy= Math.floor(ev.clientY/2-testsprite.height/2);
+	sx= Math.floor(ev.clientX/stage.scale-testsprite.width/2);
+	sy= Math.floor(ev.clientY/stage.scale-testsprite.height/2);
 });
 document.getElementById('c').addEventListener('mousedown', function(ev){
 	cycling= !cycling;
@@ -180,19 +86,20 @@ document.getElementById('c').addEventListener('mousedown', function(ev){
 
 var curritem= 0;
 document.addEventListener('keydown', function(ev){
-	var list= ['testsprite','o1','grad'];
+	var list= ['lena','testsprite','o1','grad'];
 
-	console.log(ev.keyCode);
+	//console.log(ev.keyCode);
 	switch(ev.keyCode){
 		case 49: 
-			palette= new Palette(assets[list[curritem]+'.pal']);
-			updateFB();
+			stage.setPalette(testsprite.palette);
+			stage.fb.set(0);
 			cycling= false;
 		break;
 		case 50: 
 			curritem= (curritem+1) % list.length;
-			palette= new Palette(assets[list[curritem]+'.pal']);
-			testsprite= new Buffer(assets[list[curritem]+'.gif'], palette);
+			testsprite= new Buffer(assets[list[curritem]+'.pcx']);
+			console.log(testsprite);
+			stage.setPalette(testsprite.palette);
 		break;
 
 	}
@@ -203,29 +110,14 @@ var frames= 0;
 var time= 0;
 function render(dt) {
 	time= dt;
-	twgl.resizeCanvasToDisplaySize(gl.canvas);
-	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	draw();
+	stage.fb.draw(testsprite, sx, sy);
 
-	if (cycling) palette.cycle(0,254);
-	gl.bindTexture(gl.TEXTURE_2D, textures.pal);
-	twgl.setTextureFromArray(gl, textures.pal, palette.data, {width: 256, height: 1, format: gl.RGB, type: gl.UNSIGNED_BYTE, update:true});
-
-	gl.bindTexture(gl.TEXTURE_2D, textures.fb);
-	twgl.setTextureFromArray(gl, textures.fb, fb.data, {format: gl.LUMINANCE, width: W, height: H, type: gl.UNSIGNED_BYTE, update: true});
-
-	var uniforms = {
-		time: time * 0.001,
-		resolution: [gl.canvas.width, gl.canvas.height],
-		fb: textures.fb,
-		pal: textures.pal
-	};
-
-	gl.useProgram(programInfo.program);
-	twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-	twgl.setUniforms(programInfo, uniforms);
-	twgl.drawBufferInfo(gl, gl.TRIANGLES, bufferInfo);
+	if (cycling){
+		stage.palette.cycle(0,254);
+		stage.updatePalette();
+	}
+	stage.flip();
 
 	frames++;
 	if (frames==60*10){
@@ -236,16 +128,17 @@ function render(dt) {
 	requestAnimationFrame(render);
 }
 
+var stage;
 
 loadAssets([
-	'res/testsprite.gif', 'res/testsprite.pal',
-	'res/o1.gif', 'res/o1.pal',
-	'res/grad.gif', 'res/grad.pal'
+	'res/testsprite.pcx', 'res/lena.pcx',
+	'res/o1.pcx', 'res/grad.pcx'
 	],
 	function(){
-		palette= new Palette(assets['testsprite.pal']);
-		testsprite= new Buffer(assets['testsprite.gif'], palette);
-		initWebgl();
+		stage= new Stage('c', W, H, 2, false);
+		testsprite= new Buffer(assets['lena.pcx']);
+		stage.setPalette(testsprite.palette);
+		stage.clear(153);
 		requestAnimationFrame(render);		
 	},
 	function(progress){
