@@ -44,8 +44,9 @@ div{
 	<a href="https://github.com/feiss/indexed">View on GitHub</a></div>
 
 
-<script src="twgl-full.js"></script>
-<script src="indexed.js"></script>
+<script src="twgl.min.js"></script>
+<script src="indexed.render.js"></script>
+<script src="indexed.engine.js"></script>
 <script>
 
 var W= 320;
@@ -111,8 +112,8 @@ var time= 0;
 function render(dt) {
 	time= dt;
 	
-	stage.fb.draw(glue,0,0);
-	stage.fb.draw(testsprite, sx, sy);
+	stage.fb.drawBuffer(glue,0,0);
+	stage.fb.drawBuffer(testsprite, sx, sy);
 
 	if (cycling){
 		stage.palette.cycle(0,254);

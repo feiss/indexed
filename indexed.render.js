@@ -6,6 +6,7 @@ void main() {\
 	gl_Position = position;\
 }";
 
+//todo: add optional postprocessing filters
 var indexed_frag="\
 precision mediump float;\
 uniform vec2 canvasratio;\
@@ -25,92 +26,6 @@ void main() {\
 }";
 
 
-
-var assets={};
-
-
-
-
-function loadAssets(list, onfinish, onprogress){
-	var total= list.length, loaded= 0;
-	for(var i in list){
-		switch(fileext(list[i])){
-			case 'png':
-			case 'gif':
-			case 'jpg':
-			case 'jpeg':
-				var img= new Image();
-				img.onload= function(){
-					assets[filename(this.src)]= this;
-					loaded++;
-					if (loaded>=total){
-						if (onfinish) onfinish();
-					}
-					else if (onprogress) onprogress(loaded/total);
-				};
-				img.src= list[i];
-			break;
-			case 'pcx':
-				loadBinaryFile(list[i], function(url, data){
-					assets[filename(url)]= data;
-					loaded++;
-					if (loaded>=total){
-						if (onfinish) onfinish();
-					}
-					else if (onprogress) onprogress(loaded/total);
-				})
-			break;
-			case 'pal':
-			case 'txt':
-			case 'ini':
-			case 'json':
-			case 'cfg':
-				loadTextFile(list[i], function(url, data){
-					assets[filename(url)]= data;
-					loaded++;
-					if (loaded>=total){
-						if (onfinish) onfinish();
-					}
-					else if (onprogress) onprogress(loaded/total);
-				})
-			break;
-		}
-	}
-
-	function filename(path){
-		return path.substring(path.lastIndexOf('/')+1);
-	}
-
-	function fileext(path){
-		return path.substring(path.lastIndexOf('.')+1).toLowerCase();
-	}
-}
-
-function loadTextFile(url, callback) {
-	var xobj = new XMLHttpRequest();
-	if (xobj.overrideMimeType) xobj.overrideMimeType("text/plain");
-	xobj.responseType = 'text';
-	xobj.open('GET', url, true);
-	xobj.onreadystatechange = function () {
-		if (xobj.readyState == 4 && xobj.status == "200") {
-			callback(url, xobj.responseText);
-		}
-	};
-	xobj.send(null);
- }
-
-function loadBinaryFile(url, callback) {
-	var xobj = new XMLHttpRequest();
-	if (xobj.overrideMimeType) xobj.overrideMimeType("application/octet-stream");
-	xobj.responseType = 'arraybuffer';
-	xobj.open('GET', url, true);
-	xobj.onreadystatechange = function () {
-		if (xobj.readyState == 4 && xobj.status == "200") {
-			callback(url, new Uint8Array(xobj.response));
-		}
-	};
-	xobj.send(null);
- }
 
 
 Stage= function (canvas_id, width, height, scale, forcecanvas){
@@ -198,6 +113,9 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 		twgl.resizeCanvasToDisplaySize(this.gl.canvas);
 		this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 	}
+
+	this.updatePalette();
+
 
 };
 Stage.prototype= {
@@ -387,7 +305,7 @@ Buffer.prototype= {
 	set: function(color){
 		for (var i= 0, len= this.data.length; i<len; i++) this.data[i]= color;
 	},
-	draw: function(buffer, x, y){
+	drawBuffer: function(buffer, x, y){
 		var j= y*this.width+x;
 		var c;
 		for (var i = 0, len= buffer.data.length; i < len;) {
@@ -398,6 +316,51 @@ Buffer.prototype= {
 			i++;
 			if(i%buffer.width==0) j+= this.width-buffer.width+1; else j++;
 		};
+	},
+	putPixel: function(col, x, y){
+		this.data[y*this.width+x]= col;
+	},
+	getPixel: function(x, y){
+		return this.data[y*this.width+x];
+	},
+	drawRect: function(col, x, y, w, h, empty){
+		var i,j;
+		var x2= x+w, y2= y+h;
+		var W= this.width, H= this.height;
+		if (x > W || y> H || x2 < 0 || y2 < 0) return;
+		if (x2> W) x2= W;
+		if (y2> H) y2= H;
+		var x1= x;
+		if (empty===true){
+			this.drawLine(col, x,  y,  x2, y);
+			this.drawLine(col, x,  y2, x2, y2);
+			this.drawLine(col, x,  y,  x,  y2);
+			this.drawLine(col, x2, y,  x2, y2);
+		}
+		else{
+			for(; y< y2; y++){
+				for(x= x1; x< x2; x++){
+					this.data[y*W+x]= col;
+				}
+			}
+		}
+	},
+	drawLine: function(col, x0, y0, x1, y1){
+		var W= this.width;
+		var dx= Math.abs(x1-x0);
+		var dy= Math.abs(y1-y0);
+		var sx= (x0 < x1) ? 1 : -1;
+		var sy= (y0 < y1) ? 1 : -1;
+		var err = dx-dy;
+
+		while(true){
+			this.data[y0*W+x0]= col;
+
+			if ((x0==x1) && (y0==y1)) break;
+			var e2 = 2*err;
+			if (e2 >-dy){ err-= dy; x0+= sx; }
+			if (e2 < dx){ err+= dx; y0+= sy; }
+		}
 	}
 }
 

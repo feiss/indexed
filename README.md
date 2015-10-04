@@ -1,9 +1,11 @@
-# indexed
-Emulation of old 8-bit indexed color mode in webgl
+# INDEXED
+(work in progress! still not usable)
 
-It uses a (slightly) modified version of [twgl](twgljs.org).
+Javascript game framework emulating old 8-bit indexed color mode
 
-You can try it online at [https://feiss.be/exp/indexed](http://feiss.be/exp/indexed) and [https://feiss.be/exp/indexed2](http://feiss.be/exp/indexed2)
+It supports both canvas 2D and WebGL (default, using [twgl](twgljs.org)).
 
+Only PCX indexed image format supported yet, and PAL for palettes.
 
-FPS are dumped in the console each 5 secs.
+* __indexed.render.js__: core classes for drawing: Stage, Buffer, Palette
+* __indexed.engine__: helper classes and functions for building a game: Loader, GameLoop, Input, Sprite, ParticleSystem, Timer...
