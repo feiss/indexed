@@ -27,7 +27,8 @@ div{
 </head>
 <body>
 	<canvas id="c"></canvas>
-	<div></div>
+	<div>click to toggle palette cycling<br>
+		<a href="https://github.com/feiss/indexed">view in github.com</a></div>
 <script>
 
 app= playground({
@@ -45,15 +46,23 @@ app= playground({
 		this.t= 0;
 		this.layer.setPalette(this.pcx.lena.palette);
 		this.layer.clear(0);
+		this.cycling= false;
 	},
 	render: function(dt) {
 		this.t+= dt;
+		if(this.cycling){
+			this.layer.palette.cycle(0,255);
+			this.layer.updatePalette();
+		}
 		this.layer.fb.drawLine(r(256), r(this.width), r(this.height), r(this.width), r(this.height));
 		this.layer.fb.drawRect(r(256), r(this.width), r(this.height), r(50), r(50));
 		this.layer.fb.drawBuffer(
 			this.pcx.lena, 
 			Math.floor(this.center.x + Math.sin(this.t*2)*100-this.pcx.lena.width/2), 
 			Math.floor(this.center.y + Math.sin(this.t)*50-this.pcx.lena.height/2));
+	},
+	pointerdown: function (ev) {
+		this.cycling=!this.cycling;
 	}
 });
 
