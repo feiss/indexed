@@ -7,6 +7,6 @@ It supports both canvas 2D and WebGL (default, using [twgl](twgljs.org)).
 
 Only PCX indexed image format supported yet, and PAL for palettes.
 
-* __indexed.render.js__: core classes for drawing: Stage, Buffer, Palette
+* src/__indexed.render.js__: core classes for drawing: Stage, Buffer, Palette
 
 * __build__ folder: library packed together with playground and twgl
