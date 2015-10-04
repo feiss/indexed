@@ -1,0 +1,67 @@
+<!-- copyright 2015 Diego F. Goberna http://feiss.be -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<title>8-bit indexed color in webgl</title>
+<style>
+html, body {
+	margin: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: #000;
+	overflow: hidden;
+	font-family: monospace;
+	color: #777;
+}
+a{
+	color: #444;
+}
+div{
+	margin: 5px 10px;
+}
+</style>
+<script src="../build/indexed.min.js"></script>
+</head>
+<body>
+	<canvas id="c"></canvas>
+	<div></div>
+<script>
+
+app= playground({
+
+	container: document.getElementById('c'),
+	width: 320,
+	height: 200,
+	scale: 2,
+	forcecanvas: false,
+
+	create: function() {
+		this.loadPCX('lena', 'o1', 'grad');
+	},
+	ready: function() {
+		this.t= 0;
+		this.layer.setPalette(this.pcx.lena.palette);
+		this.layer.clear(0);
+	},
+	render: function(dt) {
+		this.t+= dt;
+		this.layer.fb.drawLine(r(256), r(this.width), r(this.height), r(this.width), r(this.height));
+		this.layer.fb.drawRect(r(256), r(this.width), r(this.height), r(50), r(50));
+		this.layer.fb.drawBuffer(
+			this.pcx.lena, 
+			Math.floor(this.center.x + Math.sin(this.t*2)*100-this.pcx.lena.width/2), 
+			Math.floor(this.center.y + Math.sin(this.t)*50-this.pcx.lena.height/2));
+	}
+});
+
+
+function r(n){
+	return Math.floor(Math.random()*n);
+}
+	
+</script>
+</body>
+</html>

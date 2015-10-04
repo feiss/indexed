@@ -32,7 +32,10 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 	scale= Math.floor(parseInt(scale));
 	if (!scale || scale<0) scale= 1;
 	this.scale= scale;
-	this.canvas= document.getElementById(canvas_id);
+	if (typeof canvas_id=='string'){
+		this.canvas= document.getElementById(canvas_id);
+	}
+	else this.canvas= canvas_id;
 	if (!this.canvas) {
 		this.canvas= document.createElement('canvas');
 		this.canvas.width= 256*scale;
@@ -402,4 +405,67 @@ function PCXread(data, readpalette){
 	function word(offset){
 		return (data[offset+1]<<8)|data[offset];
 	}
+}
+
+
+
+
+
+/// plugin for playground
+if (PLAYGROUND){
+
+	PLAYGROUND.Renderer= function(app){
+		this.app= app;
+		app.on('create', this.create.bind(this));
+		app.on('postrender', this.postrender.bind(this));
+	}
+	PLAYGROUND.Renderer.plugin= true;
+	PLAYGROUND.Renderer.prototype={
+		create: function(data){
+			this.app.layer= new Stage(this.app.container, this.app.width, this.app.height, this.app.scale, this.app.forcecanvas);
+		},
+		postrender: function(){
+			this.app.layer.flip();
+		}
+	};	
+
+	PLAYGROUND.Application.prototype.loadPCX = function() {
+		var promises = [];
+		for (var i = 0; i < arguments.length; i++) {
+			var arg = arguments[i];
+			if (typeof arg === "object") {
+				for (var key in arg) promises = promises.concat(this.loadOnePCX(arg[key]));
+			} 
+			else {
+				promises.push(this.loadOnePCX(arg));
+			}
+		}
+		return Promise.all(promises);
+	};
+
+	PLAYGROUND.Application.prototype.loadOnePCX = function(name) {
+		if(!this.pcx) this.pcx = {};
+		var entry = this.getAssetEntry(name, "images", "pcx");
+		this.loader.add();
+		var self= this;
+
+		var xobj = new XMLHttpRequest();
+		if (xobj.overrideMimeType) xobj.overrideMimeType("application/octet-stream");
+		xobj.responseType = 'arraybuffer';
+		xobj.open('GET', entry.url, true);
+		xobj.onreadystatechange = function () {
+			if (xobj.readyState == 4){
+				if (xobj.status == "200") {
+					self.pcx[entry.key]= PCXread(new Uint8Array(xobj.response), true);
+					self.loader.success(entry.url);
+				}
+				else{
+					self.loader.error("Could not load "+entry.url);
+				}
+			}
+		};
+		xobj.send(null);
+	};
+
+
 }
