@@ -36,12 +36,10 @@ div{
 		<a href="https://github.com/feiss/indexed">View on GitHub</a></div>
 
 
-<script src="twgl.min.js"></script>
-<script src="indexed.render.js"></script>
-<script src="indexed.engine.js"></script>
+<script src="../build/indexed.min.js"></script>
 <script>
 
-
+//faster random
 for (var i=10000, lookupTable=[]; i--;) {
 	lookupTable.push(Math.random());
 }
@@ -88,7 +86,7 @@ function render(dt) {
 }
 
 var stage;
-
+/*
 loadAssets([
 	'res/basic.pal'
 	],
@@ -100,7 +98,37 @@ loadAssets([
 	},
 	function(progress){
 	});
+*/
+app= playground({
+	width: 320,
+	height: 200,
+	container: document.getElementById('c'),
+	scale: 2,
+	create: function(){
+		this.loadData('basic.pal');
+	},
+	ready: function() {
+		this.layer.setPalette(this.data.basic);
+		this.layer.clear(55);
+		this.test= 0;
+	},
+	render: function(dt){
 
+		for (var i=0; i< 20; i++){
+			switch(this.test){
+				case 0: this.layer.fb.putPixel(lookup()*256|0, lookup()*W|0, lookup()*H|0); break;
+				case 1: this.layer.fb.drawLine(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0); break;
+				case 2: this.layer.fb.drawRect(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0, true); break;
+				case 3: this.layer.fb.drawRect(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0); break;
+			}
+		}
+	},
+	pointerdown: function(ev){
+		this.test= (this.test+1)%4;
+		this.layer.clear(55);
+	}
+
+});
 
 </script>
 
