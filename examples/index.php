@@ -18,7 +18,7 @@
 ?>
 
 <br>
-<a href="http://github.com/feiss/indexed">back to project</a>
+<a href="http://github.com/feiss/indexed">&larr; back to project</a>
 
 </body>
 </html>
