@@ -235,7 +235,7 @@ Palette.prototype={
 			var aux= start;
 			start= end;
 			end= aux;
-			direction= -1
+			direction= -1;
 		}
 		else direction= 1;
 		

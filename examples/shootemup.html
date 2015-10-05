@@ -43,12 +43,14 @@ app= playground({
 		this.loadPCX('shootemup');
 		this.hero= {x: 100, y:300, spr:null, energy:0};
 		this.enemies= [];
+		this.bigboss={x:30, y:0, life:100, damage:0, spr: null};
 		this.enemybullets= [];
 		this.herobullets= [];
 		this.starfield= [];
 	},
 	ready: function() {
 		this.t= 0;
+		this.frame= 0;
 		this.layer.setPalette(this.pcx.shootemup.palette);
 		this.layer.clear(0);
 
@@ -57,10 +59,11 @@ app= playground({
 		this.enemybullet= this.pcx.shootemup.subBuffer(15,0,7,7);
 		this.herobullet= this.pcx.shootemup.subBuffer(15+7,0,4,9);
 		this.hero.spr=  this.pcx.shootemup.subBuffer(15+7+4,0,30,33);
-		this.enemy1= this.pcx.shootemup.subBuffer(15+7+4+30,0,18,21);
+		this.enemy= this.pcx.shootemup.subBuffer(15+7+4+30,0,18,21);
+		this.bigboss.spr= this.pcx.shootemup.subBuffer(15+7+4+30+18,0,97,77);
 
 		for (var i=0; i< 100; i++){
-			this.starfield.push({x: 10+r(220), y:r(320), col: 246+r(3), z:1+r(3)/3 });
+			this.starfield.push({x: 10+r(220), y:r(320), col: 246+r(3), z:r(3)/3 });
 		}
 
 		this.layer.setCursor('none');
@@ -68,6 +71,12 @@ app= playground({
 	step: function(dt) {
 		var i;
 		this.t+= dt;
+		this.frame++;
+
+		this.bigboss.x= 80+Math.sin(this.t)*70;
+		this.bigboss.y= 10+Math.sin(this.t*1.4)*20;
+
+
 		this.hero.x+= (this.mouse.x-14-this.hero.x)*0.1;
 		this.hero.y+= (this.mouse.y-22-this.hero.y)*0.1;
 		for (i=0; i< this.herobullets.length; i++){
@@ -78,7 +87,7 @@ app= playground({
 			}
 		}
 		for (i=0; i< this.starfield.length; i++){
-			this.starfield[i].y+= this.starfield[i].z;
+			this.starfield[i].y+= 1+this.starfield[i].z;
 			if (this.starfield[i].y>320) {
 				this.starfield[i].y= 0;
 				this.starfield[i].x= 10+r(220);
@@ -93,19 +102,19 @@ app= playground({
 		this.layer.clear(0);
 
 		this.layer.palette.setRGB(246, 
+			20+Math.sin(this.t*60)*10,
 			80+Math.sin(this.t*80)*40, 
-			80+Math.sin(this.t*50)*50, 
-			20+Math.sin(this.t*60)*10
+			80+Math.sin(this.t*50)*50 
 		);
 		this.layer.palette.setRGB(247, 
-			80+Math.sin(this.t*80)*40, 
-			80+Math.sin(this.t*50)*10, 
-			20+Math.sin(this.t*60)*10
-		);
+			20+Math.sin(this.t*80)*10,
+			80+Math.sin(this.t*100)*40, 
+			80+Math.sin(this.t*50)*10 
+		);		
 		this.layer.palette.setRGB(248, 
-			80+Math.sin(this.t*80)*10, 
-			100+Math.sin(this.t*50)*50, 
-			20+Math.sin(this.t*60)*10
+			20+Math.sin(this.t*80)*10,
+			50+Math.sin(this.t*100)*40, 
+			80+Math.sin(this.t*50)*10 
 		);
 		this.layer.palette.setRGB(251, 
 			33 +Math.sin(this.t*20)*30, 
@@ -113,14 +122,26 @@ app= playground({
 			63 +Math.sin(this.t)*60
 		);
 		this.layer.palette.setRGB(250, 255, this.hero.energy, this.hero.energy);
+
+		if(this.frame%5==0){
+			this.layer.palette.cycle(240, 245);
+		}
+
 		this.layer.updatePalette();
 
 		for (i=0; i< this.starfield.length; i++){
-			this.layer.fb.putPixel(this.starfield[i].col, this.starfield[i].x, Math.floor(this.starfield[i].y));
+			this.layer.fb.drawLine(
+				this.starfield[i].col, 
+				this.starfield[i].x,
+				Math.floor(this.starfield[i].y),
+				this.starfield[i].x,
+				Math.floor(this.starfield[i].y-this.starfield[i].z*3)
+				);
 		}
 
 		this.layer.fb.drawBuffer(this.bg, 0, 0);
 		this.layer.fb.drawBuffer(this.bg2, 240-15, 0);
+		this.layer.fb.drawBuffer(this.bigboss.spr, this.bigboss.x, this.bigboss.y);
 		this.layer.fb.drawBuffer(this.hero.spr, this.hero.x, this.hero.y);
 		for (i=0; i< this.herobullets.length; i++){
 			this.layer.fb.drawBuffer(this.herobullet, this.herobullets[i].x, this.herobullets[i].y);
