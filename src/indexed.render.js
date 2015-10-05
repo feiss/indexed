@@ -122,6 +122,9 @@ IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
 
 };
 IndexedRenderer.prototype= {
+	setCursor: function(cursor){
+		this.canvas.style.cursor= cursor;
+	},
 	clear: function(color){
 		this.fb.set(color);
 	},
@@ -253,6 +256,16 @@ Palette.prototype={
 			}
 		}
 		return this.TRANSPARENT;
+	},
+	setRGB: function(i,r,g,b){
+		this.data[i*3+0]= r|0;
+		this.data[i*3+1]= g|0;
+		this.data[i*3+2]= b|0;
+	},
+	shiftRGB: function(i,r,g,b){
+		this.data[i*3+0]= (this.data[i*3+0] + r)|0;
+		this.data[i*3+1]= (this.data[i*3+1] + g)|0;
+		this.data[i*3+2]= (this.data[i*3+2] + b)|0;
 	}
 };
 
@@ -308,8 +321,27 @@ Buffer.prototype= {
 	set: function(color){
 		for (var i= 0, len= this.data.length; i<len; i++) this.data[i]= color;
 	},
+	subBuffer: function(x, y, w, h, copypal){
+		var i,j;
+		var x2= x+w, y2= y+h;
+		var W= this.width, H= this.height;
+		if (x > W || y> H || x2 < 0 || y2 < 0) return null;
+		if (x2> W) x2= W;
+		if (y2> H) y2= H;
+		var x1= x;
+		w= x2-x;
+		h= y2-y;
+		var b= new Buffer(w, h);
+		for(j=0; y< y2; y++, j++){
+			for(i=0, x= x1; x< x2; x++, i++){
+				b.data[j*w+i]= this.data[y*W+x];
+			}
+		}
+		if (copypal) b.palette= this.palette;
+		return b;
+	},
 	drawBuffer: function(buffer, x, y){
-		var j= y*this.width+x;
+		var j= (y|0)*this.width+(x|0);
 		var c;
 		for (var i = 0, len= buffer.data.length; i < len;) {
 			c= buffer.data[i];

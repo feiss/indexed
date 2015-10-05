@@ -1,0 +1,143 @@
+<!-- copyright 2015 Diego F. Goberna http://feiss.be -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<title>8-bit indexed color in webgl</title>
+<style>
+html, body {
+	margin: 20px;
+	width: 100%;
+	height: 100%;
+	background-color: #111;
+	overflow: hidden;
+	font-family: monospace;
+	color: #777;
+}
+a{
+	color: #444;
+}
+div{
+	margin: 5px 10px;
+}
+</style>
+<script src="../build/indexed.min.js"></script>
+</head>
+<body>
+	<canvas id="c"></canvas>
+	<div>Use your mouse and your aim<br>
+		<a href="https://github.com/feiss/indexed">view in github.com</a></div>
+<script>
+
+app= playground({
+
+	container: document.getElementById('c'),
+	width: 240,
+	height: 320,
+	scale: 2,
+	forcecanvas: false,
+
+	create: function() {
+		this.loadPCX('shootemup');
+		this.hero= {x: 100, y:300, spr:null, energy:0};
+		this.enemies= [];
+		this.enemybullets= [];
+		this.herobullets= [];
+		this.starfield= [];
+	},
+	ready: function() {
+		this.t= 0;
+		this.layer.setPalette(this.pcx.shootemup.palette);
+		this.layer.clear(0);
+
+		this.bg= this.pcx.shootemup.subBuffer(0,0,15,320);
+		this.bg2= this.pcx.shootemup.subBuffer(240-15,0,15,320);
+		this.enemybullet= this.pcx.shootemup.subBuffer(15,0,7,7);
+		this.herobullet= this.pcx.shootemup.subBuffer(15+7,0,4,9);
+		this.hero.spr=  this.pcx.shootemup.subBuffer(15+7+4,0,30,33);
+		this.enemy1= this.pcx.shootemup.subBuffer(15+7+4+30,0,18,21);
+
+		for (var i=0; i< 100; i++){
+			this.starfield.push({x: 10+r(220), y:r(320), col: 246+r(3), z:1+r(3)/3 });
+		}
+
+		this.layer.setCursor('none');
+	},
+	step: function(dt) {
+		var i;
+		this.t+= dt;
+		this.hero.x+= (this.mouse.x-14-this.hero.x)*0.1;
+		this.hero.y+= (this.mouse.y-22-this.hero.y)*0.1;
+		for (i=0; i< this.herobullets.length; i++){
+			this.herobullets[i].y-= 6;
+			if (this.herobullets[i].y<10) {
+				this.herobullets.splice(i,1);
+				i--;
+			}
+		}
+		for (i=0; i< this.starfield.length; i++){
+			this.starfield[i].y+= this.starfield[i].z;
+			if (this.starfield[i].y>320) {
+				this.starfield[i].y= 0;
+				this.starfield[i].x= 10+r(220);
+			}
+		}
+
+		this.hero.energy= Math.max(0, this.hero.energy-10);
+
+	},
+	render: function() {
+		var i;
+		this.layer.clear(0);
+
+		this.layer.palette.setRGB(246, 
+			80+Math.sin(this.t*80)*40, 
+			80+Math.sin(this.t*50)*50, 
+			20+Math.sin(this.t*60)*10
+		);
+		this.layer.palette.setRGB(247, 
+			80+Math.sin(this.t*80)*40, 
+			80+Math.sin(this.t*50)*10, 
+			20+Math.sin(this.t*60)*10
+		);
+		this.layer.palette.setRGB(248, 
+			80+Math.sin(this.t*80)*10, 
+			100+Math.sin(this.t*50)*50, 
+			20+Math.sin(this.t*60)*10
+		);
+		this.layer.palette.setRGB(251, 
+			33 +Math.sin(this.t*20)*30, 
+			200+Math.sin(this.t*10)*55, 
+			63 +Math.sin(this.t)*60
+		);
+		this.layer.palette.setRGB(250, 255, this.hero.energy, this.hero.energy);
+		this.layer.updatePalette();
+
+		for (i=0; i< this.starfield.length; i++){
+			this.layer.fb.putPixel(this.starfield[i].col, this.starfield[i].x, Math.floor(this.starfield[i].y));
+		}
+
+		this.layer.fb.drawBuffer(this.bg, 0, 0);
+		this.layer.fb.drawBuffer(this.bg2, 240-15, 0);
+		this.layer.fb.drawBuffer(this.hero.spr, this.hero.x, this.hero.y);
+		for (i=0; i< this.herobullets.length; i++){
+			this.layer.fb.drawBuffer(this.herobullet, this.herobullets[i].x, this.herobullets[i].y);
+		}
+	},
+	pointerdown: function (ev) {
+		this.herobullets.push({x: this.hero.x+14, y: this.hero.y+3});
+		this.hero.energy= 200;
+		ev.original.preventDefault();
+	}
+});
+
+
+function r(n){
+	return Math.floor(Math.random()*n);
+}
+	
+</script>
+</body>
+</html>
