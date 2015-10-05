@@ -269,8 +269,8 @@ Buffer= function(a, b){
 		if (a instanceof Image && b instanceof Palette){
 			this.fromImage(a, b);
 		}
-		else if (a instanceof Uint8Array && b === undefined){
-			this.fromPCX(a);
+		else if (a instanceof Uint8Array){
+			this.fromPCX(a, b);
 		}
 		else if (parseInt(a)>0 && parseInt(b)>0){
 			this.data= new Uint8Array(a*b);
@@ -298,8 +298,8 @@ Buffer.prototype= {
 		}
 		this.palette= pal;
 	},
-	fromPCX: function(img){
-		var pcx= PCXread(img, true);
+	fromPCX: function(img, readpalette){
+		var pcx= PCXread(img, readpalette);
 		this.width= pcx.width;
 		this.height= pcx.height;
 		this.data= pcx.data;
@@ -456,7 +456,7 @@ if (PLAYGROUND){
 		xobj.onreadystatechange = function () {
 			if (xobj.readyState == 4){
 				if (xobj.status == "200") {
-					self.pcx[entry.key]= PCXread(new Uint8Array(xobj.response), true);
+					self.pcx[entry.key]= new Buffer(new Uint8Array(xobj.response), true);
 					self.loader.success(entry.url);
 				}
 				else{

@@ -20,11 +20,6 @@ a{
 	color: #444;
 }
 
-ul{
-	margin: 0;
-	padding: 0;
-	list-style-position: inside;
-}
 div{
 	margin: 5px 10px;
 }
@@ -48,57 +43,9 @@ function lookup() {
 	return ++zzz >= lookupTable.length ? lookupTable[zzz=0] : lookupTable[zzz];
 }
 
-document.getElementById('c').addEventListener('mousedown', function(ev){
-	test= (test+1)%4;
-	stage.clear(55);
-});
-
 
 var W= 320, H= 200;
 
-var starttime= new Date().getTime();
-var frames= 0;
-var time= 0;
-var test= 0;
-var shapesamount= 100;
-
-function render(dt) {
-	time= dt;
-
-	for (var i=0; i< shapesamount; i++){
-		switch(test){
-			case 0: stage.fb.putPixel(lookup()*256|0, lookup()*W|0, lookup()*H|0); break;
-			case 1: stage.fb.drawLine(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0); break;
-			case 2: stage.fb.drawRect(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0, true); break;
-			case 3: stage.fb.drawRect(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0); break;
-		}
-	}	
-
-	stage.flip();
-
-	frames++;
-	if (frames==60*10){
-		console.log('fps: '+ Math.floor( (frames*1000)/(new Date().getTime()-starttime)*10)/10);
-		starttime= new Date().getTime();
-		frames= 0;
-	}
-	requestAnimationFrame(render);
-}
-
-var stage;
-/*
-loadAssets([
-	'res/basic.pal'
-	],
-	function(){
-		stage= new Stage('c', W, H, 2);
-		stage.setPalette(assets['basic.pal']);
-		stage.clear(55);
-		requestAnimationFrame(render);
-	},
-	function(progress){
-	});
-*/
 app= playground({
 	width: 320,
 	height: 200,
@@ -131,13 +78,7 @@ app= playground({
 });
 
 </script>
-
-
-
-
-
 </body>
-
 </html>
 
 
