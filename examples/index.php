@@ -7,18 +7,18 @@
 </head>
 <body>
 <h1>Indexed examples</h1>
-<a href='$entry'>$entry</a><br>
-<a href='$entry'>$entry</a><br>
-<a href='$entry'>$entry</a><br>
-<br>
-<a href="http://github.com/feiss/indexed">back to project</a>
 
 <?php
 	$d = dir(".");
 	while (false !== ($entry = $d->read())) {
+		if (substr($entry, -4)!='html') continue;
 	   echo "<a href='$entry'>$entry</a><br>";
 	}
 	$d->close();
 ?>
+
+<br>
+<a href="http://github.com/feiss/indexed">back to project</a>
+
 </body>
 </html>
