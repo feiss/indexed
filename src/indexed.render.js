@@ -28,7 +28,7 @@ void main() {\
 
 
 
-Stage= function (canvas_id, width, height, scale, forcecanvas){
+IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
 	scale= Math.floor(parseInt(scale));
 	if (!scale || scale<0) scale= 1;
 	this.scale= scale;
@@ -121,7 +121,7 @@ Stage= function (canvas_id, width, height, scale, forcecanvas){
 
 
 };
-Stage.prototype= {
+IndexedRenderer.prototype= {
 	clear: function(color){
 		this.fb.set(color);
 	},
@@ -412,7 +412,7 @@ function PCXread(data, readpalette){
 
 
 /// plugin for playground
-if (PLAYGROUND){
+if (window.PLAYGROUND){
 
 	PLAYGROUND.Renderer= function(app){
 		this.app= app;
@@ -422,7 +422,7 @@ if (PLAYGROUND){
 	PLAYGROUND.Renderer.plugin= true;
 	PLAYGROUND.Renderer.prototype={
 		create: function(data){
-			this.app.layer= new Stage(this.app.container, this.app.width, this.app.height, this.app.scale, this.app.forcecanvas);
+			this.app.layer= new IndexedRenderer(this.app.container, this.app.width, this.app.height, this.app.scale, this.app.forcecanvas);
 		},
 		postrender: function(){
 			this.app.layer.flip();
