@@ -73,7 +73,7 @@ app= playground({
 		this.mx= this.my= -1000;
 		this.cycling= false;
 		this.currentsprite= 0;
-		this.drawingbuffer= new Buffer(W, H);
+		this.drawingbuffer= new Indexed.Buffer(W, H);
 		this.drawingbuffer.set(this.layer.palette.TRANSPARENT);
 	},
 	render: function(dt){

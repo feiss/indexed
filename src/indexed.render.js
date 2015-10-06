@@ -1,13 +1,14 @@
 
+var Indexed= {};
 
-var indexed_vert= "\
+Indexed.indexed_vert= "\
 attribute vec4 position;\
 void main() {\
 	gl_Position = position;\
 }";
 
 //todo: add optional postprocessing filters
-var indexed_frag="\
+Indexed.indexed_frag="\
 precision mediump float;\
 uniform vec2 canvasratio;\
 uniform vec2 resolution;\
@@ -28,7 +29,7 @@ void main() {\
 
 
 
-IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
+Indexed.Renderer= function (canvas_id, width, height, scale, forcecanvas){
 	scale= Math.floor(parseInt(scale));
 	if (!scale || scale<0) scale= 1;
 	this.scale= scale;
@@ -47,8 +48,8 @@ IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
 	this.canvas.width= this.width*scale;
 	this.canvas.height= this.height*scale;
 	this.center= {x: this.width/2|0, y: this.height/2|0}
-	this.fb= new Buffer(this.width, this.height);
-	this.palette= new Palette();
+	this.fb= new Indexed.Buffer(this.width, this.height);
+	this.palette= new Indexed.Palette();
 
 	var ctest= document.createElement('canvas');
 	var webgl_available = twgl.getWebGLContext(ctest);
@@ -74,7 +75,7 @@ IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
 	}
 	else{
 		this.gl = twgl.getWebGLContext(this.canvas);
-		this.programInfo = twgl.createProgramInfo(this.gl, [indexed_vert, indexed_frag]);
+		this.programInfo = twgl.createProgramInfo(this.gl, [Indexed.indexed_vert, Indexed.indexed_frag]);
 
 		//2 triangles
 		this.bufferInfo = twgl.createBufferInfoFromArrays(this.gl, 
@@ -121,7 +122,7 @@ IndexedRenderer= function (canvas_id, width, height, scale, forcecanvas){
 
 
 };
-IndexedRenderer.prototype= {
+Indexed.Renderer.prototype= {
 	setCursor: function(cursor){
 		this.canvas.style.cursor= cursor;
 	},
@@ -129,7 +130,7 @@ IndexedRenderer.prototype= {
 		this.fb.set(color);
 	},
 	setPalette: function(pal){
-		if (pal instanceof Palette) this.palette= pal;
+		if (pal instanceof Indexed.Palette) this.palette= pal;
 		else this.palette.fromString(pal);
 		this.updatePalette();
 	},
@@ -172,7 +173,7 @@ IndexedRenderer.prototype= {
 
 
 
-Palette= function(a){
+Indexed.Palette= function(a){
 	this.data= undefined;
 	this.length= undefined;
 	if (a===undefined) a= 256;
@@ -180,7 +181,7 @@ Palette= function(a){
 	else if (typeof a=='string') this.fromString(a);
 	this.TRANSPARENT= 255;
 };
-Palette.prototype={
+Indexed.Palette.prototype={
 	init: function(size){
 		if (size===undefined) size= 256*3; else size*=3;
 		if (this['data']===undefined || this.data.length!==size){
@@ -269,7 +270,7 @@ Palette.prototype={
 	}
 };
 
-Buffer= function(a, b){
+Indexed.Buffer= function(a, b){
 	this.data= undefined;
 	this.palette= null;
 	this.width= 0;
@@ -279,7 +280,7 @@ Buffer= function(a, b){
 		this.data= undefined;
 		this.width= 0;
 		this.height= 0;
-		if (a instanceof Image && b instanceof Palette){
+		if (a instanceof Image && b instanceof Indexed.Palette){
 			this.fromImage(a, b);
 		}
 		else if (a instanceof Uint8Array){
@@ -287,14 +288,14 @@ Buffer= function(a, b){
 		}
 		else if (parseInt(a)>0 && parseInt(b)>0){
 			this.data= new Uint8Array(a*b);
-			this.palette= new Palette();
+			this.palette= new Indexed.Palette();
 			this.width= a;
 			this.height= b;
 		}
 	}
 	this.init(a,b);
 }
-Buffer.prototype= {
+Indexed.Buffer.prototype= {
 	fromImage: function(img, pal){
 		if (this.data) this.data= null;
 		this.data= new Uint8Array(img.width*img.height);
@@ -312,7 +313,7 @@ Buffer.prototype= {
 		this.palette= pal;
 	},
 	fromPCX: function(img, readpalette){
-		var pcx= PCXread(img, readpalette);
+		var pcx= Indexed.PCXread(img, readpalette);
 		this.width= pcx.width;
 		this.height= pcx.height;
 		this.data= pcx.data;
@@ -331,7 +332,7 @@ Buffer.prototype= {
 		var x1= x;
 		w= x2-x;
 		h= y2-y;
-		var b= new Buffer(w, h);
+		var b= new Indexed.Buffer(w, h);
 		for(j=0; y< y2; y++, j++){
 			for(i=0, x= x1; x< x2; x++, i++){
 				b.data[j*w+i]= this.data[y*W+x];
@@ -400,7 +401,7 @@ Buffer.prototype= {
 }
 
 //fast and incomplete pcx reader. It assumes a lot of things by default.
-function PCXread(data, readpalette){
+Indexed.PCXread= function(data, readpalette){
 	var pcx={width: 0, height: 0, data: null, palette: null};
 
 	var w= word(8);
@@ -426,7 +427,7 @@ function PCXread(data, readpalette){
 
 	//palette
 	if (readpalette===true){
-		pcx.palette= new Palette(256);
+		pcx.palette= new Indexed.Palette(256);
 		for (var i= data.length-768, j=0, len= data.length; i < len; i++, j++) {
 			pcx.palette.data[j]= data[i];
 		}
@@ -454,7 +455,7 @@ if (window.PLAYGROUND){
 	PLAYGROUND.Renderer.plugin= true;
 	PLAYGROUND.Renderer.prototype={
 		create: function(data){
-			this.app.layer= new IndexedRenderer(this.app.container, this.app.width, this.app.height, this.app.scale, this.app.forcecanvas);
+			this.app.layer= new Indexed.Renderer(this.app.container, this.app.width, this.app.height, this.app.scale, this.app.forcecanvas);
 		},
 		postrender: function(){
 			this.app.layer.flip();
@@ -488,7 +489,7 @@ if (window.PLAYGROUND){
 		xobj.onreadystatechange = function () {
 			if (xobj.readyState == 4){
 				if (xobj.status == "200") {
-					self.pcx[entry.key]= new Buffer(new Uint8Array(xobj.response), true);
+					self.pcx[entry.key]= new Indexed.Buffer(new Uint8Array(xobj.response), true);
 					self.loader.success(entry.url);
 				}
 				else{
