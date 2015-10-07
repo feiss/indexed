@@ -14,3 +14,5 @@ Live examples: http://feiss.be/exp/indexed/examples/
 
 MIT Licensed. [playground](http://github.com/rezoner/playground) by @rezoner, 
 [twgl](http://github.com/greggman/twgl.js) by @greggman.
+
+Thanks to the above authors and Javier Campos for optimization tips.
