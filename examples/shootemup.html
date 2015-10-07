@@ -37,7 +37,7 @@ app= playground({
 	width: 240,
 	height: 320,
 	scale: 2,
-	forcecanvas: false,
+	forcecanvas: true,
 
 	create: function() {
 		this.loadPCX('shootemup');
@@ -99,7 +99,7 @@ app= playground({
 	},
 	render: function() {
 		var i;
-		this.layer.clear(0);
+		this.layer.clear(3);
 
 		this.layer.palette.setRGB(246, 
 			20+Math.sin(this.t*60)*10,

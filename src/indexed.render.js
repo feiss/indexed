@@ -1,3 +1,8 @@
+/** INDEXED
+*** indexed color mode for canvas, and powered by playground and twgl
+*** copyright 2015 Diego F. Goberna, MIT licensed
+*** see http://github.com/feiss/indexed
+*/
 
 var Indexed= {};
 
@@ -71,6 +76,10 @@ Indexed.Renderer= function (canvas_id, width, height, scale, forcecanvas){
 			this.context.fillRect(0,0, this.width*scale, this.height*scale);
 			this.imagedata= this.context.getImageData(0,0, this.width, this.height);
 		}
+		this.prebuffer=   new ArrayBuffer(this.imagedata.data.length);
+		this.prebuffer8=  new Uint8ClampedArray(this.prebuffer);
+		this.prebuffer32= new Uint32Array(this.prebuffer);
+
 		this.context.imageSmoothingEnabled= false;
 	}
 	else{
@@ -140,7 +149,7 @@ Indexed.Renderer.prototype= {
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures.pal);
 //		twgl.setTextureFromArray(this.gl, this.textures.pal, this.palette.data, {width: this.palette.length, height: 1, format: this.gl.RGB, type: this.gl.UNSIGNED_BYTE, update:true});
 		this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
-		this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.palette.length, 1, this.gl.RGB, this.gl.UNSIGNED_BYTE, this.palette.data);
+		this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.palette.length, 1, this.gl.RGB, this.gl.UNSIGNED_BYTE, this.palette.data8);
 	},
 	flip: function(){
 		if (this.gl){
@@ -155,13 +164,11 @@ Indexed.Renderer.prototype= {
 			twgl.drawBufferInfo(this.gl, this.gl.TRIANGLES, this.bufferInfo);
 		}
 		else{
-			var col, data= this.imagedata.data;
-			for (var i=0, end=this.width*this.height, ii=0; i< end; i++, ii+=4) {
-				col= this.fb.data[i]*3;
-				data[ii  ]= this.palette.data[col  ];
-				data[ii+1]= this.palette.data[col+1];	
-				data[ii+2]= this.palette.data[col+2];
+			var fbdata= this.fb.data, paldata= this.palette.data32, prebuffer= this.prebuffer32;
+			for (var i=0, end=this.width*this.height; i< end; i++) {
+				prebuffer[i]= paldata[ fbdata[i] ];
 			}
+			this.imagedata.data.set(this.prebuffer8);
 			if (this.backcanvas){
 				this.backcontext.putImageData(this.imagedata, 0, 0);
 				this.context.drawImage(this.backcanvas, 0, 0, this.canvas.width, this.canvas.height);
@@ -175,6 +182,9 @@ Indexed.Renderer.prototype= {
 
 Indexed.Palette= function(a){
 	this.data= undefined;
+	this.data8= undefined;
+	this.data32= undefined;
+
 	this.length= undefined;
 	if (a===undefined) a= 256;
 	if (parseInt(a)>0) this.init(a);
@@ -183,29 +193,38 @@ Indexed.Palette= function(a){
 };
 Indexed.Palette.prototype={
 	init: function(size){
-		if (size===undefined) size= 256*3; else size*=3;
+		if (size===undefined) size= 256*4; else size*=4;
 		if (this['data']===undefined || this.data.length!==size){
-			this.data= new Uint8Array(size);
-			this.length= size/3;
+			this.data = new ArrayBuffer(size);
+			this.data8= new Uint8Array(this.data);
+			this.data32= new Uint32Array(this.data);
+			
+			this.length= size/4|0;
 		}
 
-		for (var i=0; i< size; i+=3){
-			this.data[i  ]= i;
-			this.data[i+1]= i;
-			this.data[i+2]= i;
+		for (var i=0; i< size; i+=4){
+			this.data8[i  ]= i;
+			this.data8[i+1]= i;
+			this.data8[i+2]= i;
+			this.data8[i+3]= 255;
 		}
 	},
 	fromString: function(str){
 		var lines= str.split('\n');
 		if (lines[0].trim()=='JASC-PAL'){
-			var entries= parseInt(lines[2]);
-			this.data= new Uint8Array(entries*3);
-			this.length= entries;
-			for (var i=0; i< entries; i++){
+			var size= parseInt(lines[2]);
+			
+			this.data = new ArrayBuffer(size*4);
+			this.data8= new Uint8Array(this.data);
+			this.data32= new Uint32Array(this.data);
+			this.length= size;
+
+			for (var i=0; i< size; i++){
 				var col= lines[i+3].split(' ');
-				this.data[i*3+0]= parseInt(col[0]);
-				this.data[i*3+1]= parseInt(col[1]);
-				this.data[i*3+2]= parseInt(col[2]);
+				this.data8[i*3+0]= parseInt(col[0]);
+				this.data8[i*3+1]= parseInt(col[1]);
+				this.data8[i*3+2]= parseInt(col[2]);
+				this.data8[i*4+2]= 255;
 			}
 		}
 	},
@@ -223,9 +242,10 @@ Indexed.Palette.prototype={
 		var db= (colorend[2]-colorstart[2])/steps;
 
 		for (var i= start, ii=i*3; i<= end; i++, ii+=3){
-			this.data[ii  ]= Math.floor(colorstart[0]);
-			this.data[ii+1]= Math.floor(colorstart[1]);
-			this.data[ii+2]= Math.floor(colorstart[2]);
+			this.data8[ii  ]= colorstart[0]|0;
+			this.data8[ii+1]= colorstart[1]|0;
+			this.data8[ii+2]= colorstart[2]|0;
+			this.data8[ii+3]= 255;
 			colorstart[0]+= dr;
 			colorstart[1]+= dg;
 			colorstart[2]+= db;
@@ -240,28 +260,23 @@ Indexed.Palette.prototype={
 		}
 		else direction= 1;
 		
-		for (var i= start, ii= i*3, ij; i!= end; i+= direction, ii=i*3){
-			ij= (i+direction)*3;
-			this.data[ii  ]= this.data[ij];
-			this.data[ii+1]= this.data[ij+1];
-			this.data[ii+2]= this.data[ij+2];
+		for (var i= start, ii= i, ij; i!= end; i+= direction, ii=i){
+			ij= i+direction;
+			this.data32[ii]= this.data32[ij];
 		}
-		this.data[end*3  ]= this.data[start*3+0];
-		this.data[end*3+1]= this.data[start*3+1];
-		this.data[end*3+2]= this.data[start*3+2];
+		this.data32[end]= this.data32[start];
 	},
 	getColorIndex: function(r,g,b){
-		for (var i=0, len=this.data.length; i< len; i+=3){
-			if (this.data[i]==r && this.data[i+1]==g && this.data[i+2]==b){
-				return Math.floor(i/3);
+		var col= (0xff000000)|(b<<16)|(g<<8)|r;
+		for (var i=0, len=this.data32.length; i< len; i++){
+			if (this.data32[i]==col){
+				return i;
 			}
 		}
 		return this.TRANSPARENT;
 	},
 	setRGB: function(i,r,g,b){
-		this.data[i*3+0]= r|0;
-		this.data[i*3+1]= g|0;
-		this.data[i*3+2]= b|0;
+		this.data32[i]= (0xff000000)|(b<<16)|(g<<8)|r;
 	},
 	shiftRGB: function(i,r,g,b){
 		this.data[i*3+0]= (this.data[i*3+0] + r)|0;
@@ -428,8 +443,11 @@ Indexed.PCXread= function(data, readpalette){
 	//palette
 	if (readpalette===true){
 		pcx.palette= new Indexed.Palette(256);
-		for (var i= data.length-768, j=0, len= data.length; i < len; i++, j++) {
-			pcx.palette.data[j]= data[i];
+		for (var i= data.length-768, j=0, len= data.length; i < len; ) {
+			pcx.palette.data8[j++]= data[i++];
+			pcx.palette.data8[j++]= data[i++];
+			pcx.palette.data8[j++]= data[i++];
+			pcx.palette.data8[j++]= 255;
 		}
 	}
 

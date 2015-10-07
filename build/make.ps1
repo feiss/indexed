@@ -1,32 +1,37 @@
 #!/bin/bash
 
-echo "/** INDEXED" > indexed.min.js
-echo "*** indexed color mode for canvas, and powered by playground and twgl" >> indexed.min.js
-echo "*** indexed module copyright 2015 Diego F. Goberna"  >> indexed.min.js
+echo "/** INDEXED
+*** indexed color mode for canvas, and powered by playground and twgl
+*** indexed module copyright 2015 Diego F. Goberna
 
-echo "*** playground by rezoner (http://github.com/rezoner/playground)" >> indexed.min.js
-echo "*** twgl by greggman (https://github.com/greggman/twgl.js)" >> indexed.min.js
+*** playground by rezoner (http://github.com/rezoner/playground)
+*** twgl by greggman (https://github.com/greggman/twgl.js)
 
-echo "*** see http://github.com/feiss/indexed"  >> indexed.min.js
-echo "*/" >> indexed.min.js
+*** see http://github.com/feiss/indexed
+*/" > indexed.min.js
 
-python -m jsmin ../src/playground-base.js >> indexed.min.js
-cat ../src/twgl.min.js >> indexed.min.js
+
+cat libs/playground-base.min.js >> indexed.min.js
+cat libs/twgl.min.js >> indexed.min.js
+echo "/** INDEXED
+*** indexed color mode for canvas, and powered by playground and twgl
+*** copyright 2015 Diego F. Goberna, MIT licensed
+*** see http://github.com/feiss/indexed
+*/" >> indexed.min.js
 python -m jsmin ../src/indexed.render.js >> indexed.min.js
 
 
 
-echo "/** INDEXED" > indexed.js
-echo "*** indexed color mode for canvas, and powered by playground and twgl" >> indexed.js
-echo "*** indexed module copyright 2015 Diego F. Goberna"  >> indexed.js
+echo "/** INDEXED
+*** indexed color mode for canvas, and powered by playground and twgl
+*** indexed module copyright 2015 Diego F. Goberna
 
+*** playground by rezoner (http://github.com/rezoner/playground)
+*** twgl by greggman (https://github.com/greggman/twgl.js)
 
-echo "*** playground by rezoner (http://github.com/rezoner/playground)" >> indexed.js
-echo "*** twgl by greggman (https://github.com/greggman/twgl.js)" >> indexed.js
+*** see http://github.com/feiss/indexed
+*/" > indexed.js
 
-echo "*** see http://github.com/feiss/indexed"  >> indexed.js
-echo "*/" >> indexed.js
-
-cat ../src/playground-base.js >> indexed.js
-cat ../src/twgl.min.js >> indexed.js
+cat libs/playground-base.min.js >> indexed.js
+cat libs/twgl.min.js >> indexed.js
 cat ../src/indexed.render.js >> indexed.js
