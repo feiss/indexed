@@ -40,13 +40,14 @@ app= playground({
 	forcecanvas: true,
 
 	create: function() {
-		this.loadPCX('shootemup');
-		this.hero= {x: 100, y:300, spr:null, energy:0};
+		this.loadPCX('shootemup','pixelfont');
+		this.hero= {x: 100, y:300, spr:null, energy:0, life: 100};
 		this.enemies= [];
-		this.bigboss={x:30, y:0, life:100, damage:0, spr: null};
+		this.bigboss={x:30, y:0, life:100, damage:0, spr: null, falling: 0};
 		this.enemybullets= [];
 		this.herobullets= [];
 		this.starfield= [];
+		this.bangs=[];
 	},
 	ready: function() {
 		this.t= 0;
@@ -54,16 +55,32 @@ app= playground({
 		this.layer.setPalette(this.pcx.shootemup.palette);
 		this.layer.clear(0);
 
-		this.bg= this.pcx.shootemup.subBuffer(0,0,15,320);
-		this.bg2= this.pcx.shootemup.subBuffer(240-15,0,15,320);
-		this.enemybullet= this.pcx.shootemup.subBuffer(15,0,7,7);
-		this.herobullet= this.pcx.shootemup.subBuffer(15+7,0,4,9);
-		this.hero.spr=  this.pcx.shootemup.subBuffer(15+7+4,0,30,33);
-		this.enemy= this.pcx.shootemup.subBuffer(15+7+4+30,0,18,21);
-		this.bigboss.spr= this.pcx.shootemup.subBuffer(15+7+4+30+18,0,97,77);
-
+		this.redfont= this.pcx.pixelfont;
+		this.greenfont= this.pcx.pixelfont.getSubBuffer();
+		this.grayfont= this.pcx.pixelfont.getSubBuffer();
+		
+		this.redfont.replaceValues({1:250});
+		this.greenfont.replaceValues({1:240});
+		this.grayfont.replaceValues({1:247});
+		
+		this.fontchars="abcdefghijklmnñopqrstuvwxyz0123456789.,;:=+-/'\"()[]@~_";
+		this.bg= this.pcx.shootemup.getSubBuffer(0,0,15,320);
+		this.bg2= this.pcx.shootemup.getSubBuffer(240-15,0,15,320);
+		this.enemybullet= this.pcx.shootemup.getSubBuffer(15,0,7,7);
+		this.herobullet= this.pcx.shootemup.getSubBuffer(15+7,0,4,9);
+		this.hero.spr=  this.pcx.shootemup.getSubBuffer(15+7+4,0,30,33);
+		this.enemy= this.pcx.shootemup.getSubBuffer(15+7+4+30,0,18,21);
+		this.bigboss.spr= this.pcx.shootemup.getSubBuffer(15+7+4+30+18,0,97,77);
+		this.herofire= this.pcx.shootemup.getSubBuffer(15+7+4+30+18+97,0,7,12);
+		this.yeah= this.pcx.shootemup.getSubBuffer(16,40,56,13);
+		this.bang= [
+			this.pcx.shootemup.getSubBuffer(178,0,27,27),
+			this.pcx.shootemup.getSubBuffer(178,27,27,27),
+			this.pcx.shootemup.getSubBuffer(178,27*2,27,27),
+			this.pcx.shootemup.getSubBuffer(178,27*3,27,27),
+		];
 		for (var i=0; i< 100; i++){
-			this.starfield.push({x: 10+r(220), y:r(320), col: 246+r(3), z:r(3)/3 });
+			this.starfield.push({x: 10+r(220), y:r(320), col: 246+r(3), z:4+r(3) });
 		}
 
 		this.layer.setCursor('none');
@@ -74,20 +91,46 @@ app= playground({
 		this.frame++;
 
 		this.bigboss.x= 80+Math.sin(this.t)*70;
-		this.bigboss.y= 10+Math.sin(this.t*1.4)*20;
+		this.bigboss.y= 10+Math.sin(this.t*1.4)*20 + this.bigboss.falling;
 
-
+		if (this.bigboss.falling<320){
+			if (this.bigboss.life<10){
+				this.bangs.push({x: this.bigboss.x+r(75), y: this.bigboss.y+r(55), frame: 0});
+			}
+			if (this.bigboss.life==0) this.bigboss.falling+=2;
+		}
 		this.hero.x+= (this.mouse.x-14-this.hero.x)*0.1;
 		this.hero.y+= (this.mouse.y-22-this.hero.y)*0.1;
+
 		for (i=0; i< this.herobullets.length; i++){
 			this.herobullets[i].y-= 6;
 			if (this.herobullets[i].y<10) {
-				this.herobullets.splice(i,1);
-				i--;
+				this.herobullets.splice(i--,1);
+			}
+			else {
+				var c= this.layer.fb.getPixel(this.herobullets[i].x+1|0, this.herobullets[i].y+2|0);
+				if(c==253){
+					this.bangs.push({
+						x: this.herobullets[i].x-13, 
+						y: this.herobullets[i].y-13,
+						frame: 0
+					});
+					this.bigboss.life= Math.max(0, this.bigboss.life-1);
+					//this.herobullets.splice(i--,1);
+				}
+			}
+		}
+		for (i=0; i< this.bangs.length; i++){
+			this.bangs[i].frame++;
+			if (this.bangs[i].frame>=this.bang.length*4){
+				this.bangs.splice(i--,1);
 			}
 		}
 		for (i=0; i< this.starfield.length; i++){
-			this.starfield[i].y+= 1+this.starfield[i].z;
+			if (this.bigboss.falling>300 && this.starfield[i].z<15)
+				this.starfield[i].z+=0.1;
+
+			this.starfield[i].y+= 1+this.starfield[i].z|0;
 			if (this.starfield[i].y>320) {
 				this.starfield[i].y= 0;
 				this.starfield[i].x= 10+r(220);
@@ -102,24 +145,19 @@ app= playground({
 		this.layer.clear(3);
 
 		this.layer.palette.setRGB(246, 
-			20+Math.sin(this.t*60)*10,
-			80+Math.sin(this.t*80)*40, 
-			80+Math.sin(this.t*50)*50 
+			20+Math.sin(this.t*11)*10,
+			80+Math.sin(this.t*31)*40, 
+			80+Math.sin(this.t)*50 
 		);
 		this.layer.palette.setRGB(247, 
-			20+Math.sin(this.t*80)*10,
-			80+Math.sin(this.t*100)*40, 
-			80+Math.sin(this.t*50)*10 
+			20+Math.sin(this.t*31)*10,
+			80+Math.sin(this.t*51)*40, 
+			80+Math.sin(this.t)*10 
 		);		
 		this.layer.palette.setRGB(248, 
-			20+Math.sin(this.t*80)*10,
-			50+Math.sin(this.t*100)*40, 
-			80+Math.sin(this.t*50)*10 
-		);
-		this.layer.palette.setRGB(251, 
-			33 +Math.sin(this.t*20)*30, 
-			200+Math.sin(this.t*10)*55, 
-			63 +Math.sin(this.t)*60
+			20+Math.sin(this.t*31)*10,
+			50+Math.sin(this.t*51)*40, 
+			80+Math.sin(this.t)*10 
 		);
 		this.layer.palette.setRGB(250, 255, this.hero.energy, this.hero.energy);
 
@@ -135,25 +173,71 @@ app= playground({
 				this.starfield[i].x,
 				Math.floor(this.starfield[i].y),
 				this.starfield[i].x,
-				Math.floor(this.starfield[i].y-this.starfield[i].z*3)
+				Math.floor(this.starfield[i].y-(this.starfield[i].z*2|0))
 				);
 		}
 
 		this.layer.fb.drawBuffer(this.bg, 0, 0);
 		this.layer.fb.drawBuffer(this.bg2, 240-15, 0);
-		this.layer.fb.drawBuffer(this.bigboss.spr, this.bigboss.x, this.bigboss.y);
+		if (this.bigboss.falling<320){
+			this.layer.fb.drawBuffer(this.bigboss.spr, this.bigboss.x, this.bigboss.y);
+		}
 		this.layer.fb.drawBuffer(this.hero.spr, this.hero.x, this.hero.y);
+
+		if (--this.showfire>0){
+			this.layer.fb.drawBuffer(this.herofire, this.hero.x+12, this.hero.y-4);
+		}
+
 		for (i=0; i< this.herobullets.length; i++){
 			this.layer.fb.drawBuffer(this.herobullet, this.herobullets[i].x, this.herobullets[i].y);
 		}
+
+		for (i=0; i< this.bangs.length; i++){
+			this.layer.fb.drawBuffer(this.bang[this.bangs[i].frame/4|0], this.bangs[i].x, this.bangs[i].y);
+		}
+
+		if (this.bigboss.life==0)
+			this.layer.fb.drawBuffer(
+				this.yeah, this.layer.center.x-this.yeah.width/2|0, 
+				this.bigboss.falling - this.layer.center.y-this.yeah.height/2|0);
+
+		this.print(this.redfont, 'indexed v.alpha', 10, 2);
+		this.print(this.grayfont, 't-'+this.frame, 14, 320-7);
+		this.print(this.redfont, 'life_'+this.hero.life, 180, 320-7);
+		this.print(this.greenfont, 'life_'+this.bigboss.life, 180, 2);
 	},
 	pointerdown: function (ev) {
-		this.herobullets.push({x: this.hero.x+14, y: this.hero.y+3});
+		this.herobullets.push({x: this.hero.x+13, y: this.hero.y+3});
 		this.hero.energy= 200;
+		this.showfire= 3;
+
 		ev.original.preventDefault();
+	},
+	print: function(font, t, x, y){
+		var xi= x;
+		t= t.toLowerCase();
+		for (var i=0; i< t.length; i++){
+			var c= t[i];
+			if (c==' '){x+= 3; continue}
+			if (c=='\n'){x= xi; y+= 6; continue}
+			var p= this.fontchars.indexOf(c);
+			if (p==-1) continue;
+			this.layer.fb.drawSubBuffer(font, p*5, 0, 5, 5, x, y);
+			x+= 5;
+		}
 	}
 });
 
+
+
+function intersection(x1,y1,w1,h1,x2,y2,w2,h2){
+	//if point, rect of size 1
+	if (arguments.length==6){
+		w2= 1;
+		h2= 1;
+	}
+	return (x1<=x2+w2 && x1+w1>=x2 && y1<=y2+h2 && y1+h1>=y2);
+}
 
 function r(n){
 	return Math.floor(Math.random()*n);

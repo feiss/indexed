@@ -337,7 +337,23 @@ Indexed.Buffer.prototype= {
 	set: function(color){
 		for (var i= 0, len= this.data.length; i<len; i++) this.data[i]= color;
 	},
-	subBuffer: function(x, y, w, h, copypal){
+	replaceValues: function(repl){
+		//repl is an object {fromValue1:toValue1 .. fromValueN:toValueN}
+		for (var i= 0, len= this.data.length; i<len; i++) {
+			var r= repl[this.data[i]];
+			if (r===undefined) continue;
+			this.data[i]= r;
+		}
+	},
+	getSubBuffer: function(x, y, w, h, copypal){
+		if (arguments.length==0){
+			x= 0;
+			y= 0;
+			w= this.width;
+			h= this.height;
+			copypal= true;
+		}
+
 		var i,j;
 		var x2= x+w, y2= y+h;
 		var W= this.width, H= this.height;
@@ -353,6 +369,7 @@ Indexed.Buffer.prototype= {
 				b.data[j*w+i]= this.data[y*W+x];
 			}
 		}
+		//FIX: shallow copy? hmmm nop nop! 
 		if (copypal) b.palette= this.palette;
 		return b;
 	},
@@ -367,6 +384,26 @@ Indexed.Buffer.prototype= {
 			i++;
 			if(i%buffer.width==0) j+= this.width-buffer.width+1; else j++;
 		};
+	},
+	drawSubBuffer: function(buffer, bx, by, bw, bh, x, y){
+		var i,j;
+		var bx2= bx+bw, by2= by+bh;
+		var W= buffer.width, H= buffer.height;
+		if (bx > W || by> H || bx2 < 0 || by2 < 0) return null;
+		if (bx2> W) bx2= W;
+		if (by2> H) by2= H;
+		var bx1= bx;
+		bw= bx2-bx;
+		bh= by2-by;
+		var c;
+		for(j=y; by< by2; by++, j++){
+			for(i=x, bx= bx1; bx< bx2; bx++, i++){
+				c= buffer.data[by*W+bx];
+				if (c!=buffer.palette.TRANSPARENT){
+					this.data[j*this.width+i]= c;
+				}
+			}
+		}
 	},
 	putPixel: function(col, x, y){
 		this.data[y*this.width+x]= col;
