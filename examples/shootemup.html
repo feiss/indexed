@@ -84,6 +84,7 @@ app= playground({
 		}
 
 		this.layer.setCursor('none');
+		this.starttime= performance.now();
 	},
 	step: function(dt) {
 		var i;
@@ -202,9 +203,9 @@ app= playground({
 				this.bigboss.falling - this.layer.center.y-this.yeah.height/2|0);
 
 		this.print(this.redfont, 'indexed v.alpha', 10, 2);
-		this.print(this.grayfont, 't-'+this.frame, 14, 320-7);
 		this.print(this.redfont, 'life_'+this.hero.life, 180, 320-7);
 		this.print(this.greenfont, 'life_'+this.bigboss.life, 180, 2);
+		this.print(this.grayfont, 'fps '+Math.floor(this.frame/(performance.now()-this.starttime)*1000), 14, 320-7);
 	},
 	pointerdown: function (ev) {
 		this.herobullets.push({x: this.hero.x+13, y: this.hero.y+3});
@@ -243,6 +244,6 @@ function r(n){
 	return Math.floor(Math.random()*n);
 }
 	
-</script>
+ (function(){if ("performance" in window == false) {window.performance = {}; } Date.now = (Date.now || function () {return new Date().getTime(); }); if ("now" in window.performance == false){var nowOffset = Date.now(); if (performance.timing && performance.timing.navigationStart){nowOffset = performance.timing.navigationStart } window.performance.now = function now(){return Date.now() - nowOffset; } } })(); </script>
 </body>
 </html>
