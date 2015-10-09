@@ -100,7 +100,7 @@ Indexed.Renderer= function (canvas_id, width, height, scale, forcecanvas){
 				mag: this.gl.NEAREST,
 				width: palwidth,
 				height: 1,
-				format: this.gl.RGB,
+				format: this.gl.RGBA,
 				//src: this.palette.data,
 				type: this.gl.UNSIGNED_BYTE,
 				auto: false
@@ -149,7 +149,7 @@ Indexed.Renderer.prototype= {
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures.pal);
 //		twgl.setTextureFromArray(this.gl, this.textures.pal, this.palette.data, {width: this.palette.length, height: 1, format: this.gl.RGB, type: this.gl.UNSIGNED_BYTE, update:true});
 		this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
-		this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.palette.length, 1, this.gl.RGB, this.gl.UNSIGNED_BYTE, this.palette.data8);
+		this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.palette.length, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.palette.data8);
 	},
 	flip: function(){
 		if (this.gl){
@@ -202,11 +202,12 @@ Indexed.Palette.prototype={
 			this.length= size/4|0;
 		}
 
-		for (var i=0; i< size; i+=4){
-			this.data8[i  ]= i;
-			this.data8[i+1]= i;
-			this.data8[i+2]= i;
-			this.data8[i+3]= 255;
+		for (var i=0; i< this.length; i++){
+			console.log(i);
+			this.data8[i*4 ]= i;
+			this.data8[i*4+1]= i;
+			this.data8[i*4+2]= i;
+			this.data8[i*4+3]= 255;
 		}
 	},
 	fromString: function(str){
@@ -221,10 +222,10 @@ Indexed.Palette.prototype={
 
 			for (var i=0; i< size; i++){
 				var col= lines[i+3].split(' ');
-				this.data8[i*3+0]= parseInt(col[0]);
-				this.data8[i*3+1]= parseInt(col[1]);
-				this.data8[i*3+2]= parseInt(col[2]);
-				this.data8[i*4+2]= 255;
+				this.data8[i*4+0]= parseInt(col[0]);
+				this.data8[i*4+1]= parseInt(col[1]);
+				this.data8[i*4+2]= parseInt(col[2]);
+				this.data8[i*4+3]= 255;
 			}
 		}
 	},
@@ -241,7 +242,7 @@ Indexed.Palette.prototype={
 		var dg= (colorend[1]-colorstart[1])/steps;
 		var db= (colorend[2]-colorstart[2])/steps;
 
-		for (var i= start, ii=i*3; i<= end; i++, ii+=3){
+		for (var i= start, ii=i*4; i<= end; i++, ii+=4){
 			this.data8[ii  ]= colorstart[0]|0;
 			this.data8[ii+1]= colorstart[1]|0;
 			this.data8[ii+2]= colorstart[2]|0;

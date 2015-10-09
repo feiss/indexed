@@ -62,6 +62,7 @@ app= playground({
 	height: 200,
 	container: document.getElementById('c'),
 	scale: 2,
+	forcecanvas: false,
 	create: function(){
 		this.loadPCX('testsprite', 'lena', 'grad', 'glue');
 	},
@@ -85,6 +86,8 @@ app= playground({
 			this.layer.palette.cycle(0,254);
 			this.layer.updatePalette();
 		}
+		for(var i=0; i< 256; i++) this.layer.fb.drawRect(i, i,0,i,3);
+
 	},
 	pointermove: function(ev){
 		if (!this.sprite) return;

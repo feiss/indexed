@@ -51,11 +51,12 @@ app= playground({
 	height: 200,
 	container: document.getElementById('c'),
 	scale: 2,
+	forcecanvas: true,
 	create: function(){
 		this.loadData('basic.pal');
 	},
 	ready: function() {
-		this.layer.setPalette(this.data.basic);
+		//this.layer.setPalette(this.data.basic);
 		this.layer.clear(55);
 		this.test= 0;
 	},
@@ -69,6 +70,7 @@ app= playground({
 				case 3: this.layer.fb.drawRect(lookup()*256|0, lookup()*W|0, lookup()*H|0, lookup()*W|0, lookup()*H|0); break;
 			}
 		}
+		for(var i=0; i< 256; i++) this.layer.fb.drawRect(i,i,0,i,3);
 	},
 	pointerdown: function(ev){
 		this.test= (this.test+1)%4;

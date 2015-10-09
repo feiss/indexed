@@ -60,6 +60,8 @@ app= playground({
 			this.pcx.lena, 
 			Math.floor(this.center.x + Math.sin(this.t*2)*100-this.pcx.lena.width/2), 
 			Math.floor(this.center.y + Math.sin(this.t)*50-this.pcx.lena.height/2));
+		for(var i=0; i< 256; i++) this.layer.fb.drawRect(i, i,0,i,3);
+
 	},
 	pointerdown: function (ev) {
 		this.cycling=!this.cycling;
