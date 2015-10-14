@@ -61,16 +61,22 @@ app= playground({
 		this.greenfont= this.pcx.pixelfont.getSubBuffer();
 		this.grayfont= this.pcx.pixelfont.getSubBuffer();
 		
-		this.redfont.replaceValues({1:250});
-		this.greenfont.replaceValues({1:240});
-		this.grayfont.replaceValues({1:247});
+		this.redfont.replaceValues({1:250, 0:10});
+		this.greenfont.replaceValues({1:240, 0:10});
+		this.grayfont.replaceValues({1:247, 0:10});
 		
 		this.fontchars="abcdefghijklmnñopqrstuvwxyz0123456789.,;:=+-/'\"()[]@~_";
 		this.bg= this.pcx.shootemup.getSubBuffer(0,0,15,320);
 		this.bg2= this.pcx.shootemup.getSubBuffer(240-15,0,15,320);
 		this.enemybullet= this.pcx.shootemup.getSubBuffer(15,0,7,7);
 		this.herobullet= this.pcx.shootemup.getSubBuffer(15+7,0,4,9);
-		this.hero.spr=  this.pcx.shootemup.getSubBuffer(15+7+4,0,30,33);
+		this.hero.spr=  [
+			this.pcx.shootemup.getSubBuffer(50,254,30,33),
+			this.pcx.shootemup.getSubBuffer(50+30,254,30,33),
+			this.pcx.shootemup.getSubBuffer(50+60,254,30,33),
+			this.pcx.shootemup.getSubBuffer(50+90,254,30,33),
+			this.pcx.shootemup.getSubBuffer(50+120,254,30,33)
+			];
 		this.enemy= this.pcx.shootemup.getSubBuffer(15+7+4+30,0,18,21);
 		this.bigboss.spr= this.pcx.shootemup.getSubBuffer(15+7+4+30+18,0,97,77);
 		this.herofire= this.pcx.shootemup.getSubBuffer(15+7+4+30+18+97,0,7,12);
@@ -213,12 +219,12 @@ app= playground({
 	},
 	render: function() {
 		var i;
-		this.layer.clear(3);
+		this.layer.clear(10);
 
 		this.layer.palette.setRGB(250, 255, this.hero.energy, this.hero.energy);
 
 		if(this.frame%5==0){
-			this.layer.palette.cycle(240, 245);
+			this.layer.palette.cycle(144, 175);
 		}
 
 		this.layer.updatePalette();
@@ -244,7 +250,15 @@ app= playground({
 			this.layer.fb.drawBuffer(this.enemy, this.enemies[i].x+Math.sin(this.t*2+i)*30|0, this.enemies[i].y);
 		}
 
-		if (!this.gameover) this.layer.fb.drawBuffer(this.hero.spr, this.hero.x, this.hero.y);
+		if (!this.gameover) {
+			var dir;
+			if (this.hero.dx>-1 && this.hero.dx<1) dir= 0;
+			else if (this.hero.dx>=1 && this.hero.dx<=2) dir= 3;
+			else if (this.hero.dx>2) dir= 4;
+			else if (this.hero.dx<=-1 && this.hero.dx>=-2) dir= 1;
+			else dir= 2;
+			this.layer.fb.drawBuffer(this.hero.spr[dir], this.hero.x, this.hero.y);
+		}
 
 		if (--this.showfire>0){
 			this.layer.fb.drawBuffer(this.herofire, this.hero.x+12, this.hero.y-4);

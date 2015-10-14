@@ -203,7 +203,6 @@ Indexed.Palette.prototype={
 		}
 
 		for (var i=0; i< this.length; i++){
-			console.log(i);
 			this.data8[i*4 ]= i;
 			this.data8[i*4+1]= i;
 			this.data8[i*4+2]= i;
