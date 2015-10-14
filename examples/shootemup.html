@@ -184,7 +184,11 @@ app= playground({
 						y: this.herobullets[i].y-13,
 						frame: 0
 					});
-					if (c==253) this.bigboss.life= Math.max(0, this.bigboss.life-1);
+					if (c==253) {
+						this.bigboss.life= Math.max(0, this.bigboss.life-1);
+						this.bigboss.spr.drawRect(this.layer.palette.TRANSPARENT, (this.herobullets[i].x-this.bigboss.x-3)|0, (this.herobullets[i].y-this.bigboss.y-4)|0, 6, 8);
+						this.bigboss.spr.drawRect(252, (this.herobullets[i].x-this.bigboss.x-3)|0, (this.herobullets[i].y-this.bigboss.y-4)|0, 6, 6, true);
+					}
 					else{
 						var enemy= this.getEnemyAt(this.herobullets[i].x, this.herobullets[i].y);
 						if (enemy) enemy.x= -9999;
