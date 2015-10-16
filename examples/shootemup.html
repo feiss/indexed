@@ -41,10 +41,11 @@ app= playground({
 
 	create: function() {
 		this.loadPCX('shootemup','pixelfont');
+		this.loadSounds('music','hit','shoot','enemy','explosion');
 		this.hero= {x: 100, y:300, spr:null, energy:0, life: 100, dx: 0, dy: 0, points:0};
 		this.enemies= [];
 
-		this.bigboss={x:30, y:0, life:300, damage:0, spr: null, falling: 0};
+		this.bigboss={x:30, y:0, life:250, damage:0, spr: null, falling: 0};
 		this.enemybullets= [];
 		this.herobullets= [];
 		this.starfield= [];
@@ -66,8 +67,15 @@ app= playground({
 		this.grayfont.replaceValues({1:247, 0:10});
 		
 		this.fontchars="abcdefghijklmnñopqrstuvwxyz0123456789.,;:=+-/'\"()[]@~_";
-		this.bg= this.pcx.shootemup.getSubBuffer(0,0,15,320);
-		this.bg2= this.pcx.shootemup.getSubBuffer(240-15,0,15,320);
+
+		this.bg= this.pcx.shootemup.getSubBuffer(0,0,15,60);
+		this.bg2= this.pcx.shootemup.getSubBuffer(240-15,0,15,60);
+		this.bgmed= this.pcx.shootemup.getSubBuffer(0,210,19,103);
+		this.bgmed2= this.pcx.shootemup.getSubBuffer(240-19,210,19,103);
+		this.bgfar= this.pcx.shootemup.getSubBuffer(0,109,30,202-109);
+		this.bgfar2= this.pcx.shootemup.getSubBuffer(240-30,109,30,202-109);
+
+
 		this.enemybullet= this.pcx.shootemup.getSubBuffer(15,0,7,7);
 		this.herobullet= this.pcx.shootemup.getSubBuffer(15+7,0,4,9);
 		this.hero.spr=  [
@@ -100,6 +108,8 @@ app= playground({
 
 		this.layer.setCursor('none');
 		this.starttime= performance.now();
+
+		this.sound.play('music', true);
 	},
 	step: function(dt) {
 		if (!this.bigboss.spr) return;
@@ -134,18 +144,20 @@ app= playground({
 			}
 		}
 
+
 		for (i=0; i< this.enemies.length; i++){
 			this.enemies[i].y+=2;
 		}
-		if (this.enemies[0].y>400){
+		if (this.enemies[0].y>400 && this.bigboss.life>5){
 			var ex= 40+r(180);
 			for (i=0; i< 5; i++){
 				this.enemies[i]= {x: ex, y: -100+i*30 };
 			}
 		}
-		if (r(100)<5){
+		if (this.bigboss.life>0 && r(100)<5){
 			var e= r(this.enemies.length*2);
 			if (e>= this.enemies.length){
+				this.sound.play('enemy');
 				this.enemybullets.push({
 					x: this.bigboss.x+this.bigboss.spr.width/2|0, 
 					y: this.bigboss.y+this.bigboss.spr.height-10,
@@ -153,6 +165,7 @@ app= playground({
 					dy: 2});
 			}else{
 				if (this.enemies[e].x>0 && this.enemies[e].y>0 && this.enemies[e].y<300){
+					this.sound.play('enemy');
 					var v= normalize(this.hero.x+13 - this.enemies[e].x+6, this.hero.y+6 - this.enemies[e].y+10);
 					this.enemybullets.push({
 						x: this.enemies[e].x+6, 
@@ -186,8 +199,7 @@ app= playground({
 					});
 					if (c==253) {
 						this.bigboss.life= Math.max(0, this.bigboss.life-1);
-						this.bigboss.spr.drawRect(this.layer.palette.TRANSPARENT, (this.herobullets[i].x-this.bigboss.x-3)|0, (this.herobullets[i].y-this.bigboss.y-4)|0, 6, 8);
-						this.bigboss.spr.drawRect(252, (this.herobullets[i].x-this.bigboss.x-3)|0, (this.herobullets[i].y-this.bigboss.y-4)|0, 6, 6, true);
+						if (this.bigboss.life<=0) this.sound.play('explosion');
 					}
 					else{
 						var enemy= this.getEnemyAt(this.herobullets[i].x, this.herobullets[i].y);
@@ -195,6 +207,7 @@ app= playground({
 					}
 					this.hero.points+=10;
 					//this.herobullets.splice(i--,1);
+					this.sound.play('hit');
 				}
 				else if (c==237|| c==238){
 
@@ -242,10 +255,25 @@ app= playground({
 				Math.floor(this.starfield[i].y-(this.starfield[i].z*2|0))
 				);
 		}
+		var bgoffset= (this.t*60|0)%this.bg.height;
+		var bg2offset= (10+this.t*60|0)%this.bg2.height;
+		var bgmedoffset= (10+this.t*30|0)%this.bgmed.height;
+		var bgfaroffset= (10+this.t*15|0)%this.bgfar.height;
+		for (i = -1; i < 6; i++) {
+			this.layer.fb.drawBuffer(this.bgfar, 8, this.bgfar.height*i+bgfaroffset);
+			this.layer.fb.drawBuffer(this.bgfar2, 240-20-8, this.bgfar.height*i+bgfaroffset);
+		}
+		for (i = -1; i < 6; i++) {
+			this.layer.fb.drawBuffer(this.bgmed, 7, this.bgmed.height*i+bgmedoffset);
+			this.layer.fb.drawBuffer(this.bgmed2, 240-19-7, this.bgmed.height*i+bgmedoffset);
+		}
+		for (i = -1; i < 6; i++) {
+			this.layer.fb.drawBuffer(this.bg, 0, this.bg.height*i+bgoffset);
+			this.layer.fb.drawBuffer(this.bg2, 240-15, this.bg.height*i+bg2offset);
+		}
 
 
-		this.layer.fb.drawBuffer(this.bg, 0, 0);
-		this.layer.fb.drawBuffer(this.bg2, 240-15, 0);
+
 		if (this.bigboss.falling<320){
 			this.layer.fb.drawBuffer(this.bigboss.spr, this.bigboss.x, this.bigboss.y);
 		}
@@ -274,6 +302,9 @@ app= playground({
 			if (c==254 || c==250){
 				this.bangs.push({x: this.enemybullets[i].x-13, y: this.enemybullets[i].y-13, frame: 0});
 				this.hero.life= Math.max(0, this.hero.life-10);
+				if (this.hero.life<=0){
+					this.sound.play('explosion');
+				}
 				this.enemybullets.splice(i--,1);
 				continue;
 			}
@@ -314,7 +345,7 @@ app= playground({
 		this.herobullets.push({x: this.hero.x+13, y: this.hero.y+3});
 		this.hero.energy= 150;
 		this.showfire= 3;
-
+		this.sound.play('shoot');
 	},
 	print: function(font, t, x, y){
 		var xi= x;
