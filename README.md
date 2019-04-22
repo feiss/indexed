@@ -1,5 +1,5 @@
 # Indexed
-(work in progress! still not usable)
+(work in progress!)
 
 Javascript game framework emulating old 8-bit indexed color mode
 
